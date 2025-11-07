@@ -328,18 +328,6 @@ Este projeto está sob a licença MIT.
 
 ---
 
-## 👥 Equipe
-
-Desenvolvido pela equipe ERP Team.
-
----
-
-## 📞 Suporte
-
-Para dúvidas e suporte, entre em contato através do email: suporte@erp.com
-
----
-
 ## 🔗 Links Úteis
 
 - [Documentação NestJS](https://docs.nestjs.com/)

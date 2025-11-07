@@ -2,6 +2,9 @@
 # Estágio de desenvolvimento
 FROM node:20-alpine AS development
 
+# Instalar OpenSSL e dependências necessárias
+RUN apk add --no-cache openssl libc6-compat
+
 WORKDIR /app
 
 # Copiar arquivos de dependências
@@ -26,6 +29,9 @@ CMD ["npm", "run", "start:dev"]
 # Estágio de build para produção
 FROM node:20-alpine AS builder
 
+# Instalar OpenSSL e dependências necessárias
+RUN apk add --no-cache openssl libc6-compat
+
 WORKDIR /app
 
 COPY package*.json ./
@@ -40,6 +46,9 @@ RUN npm run build
 
 # Estágio de produção
 FROM node:20-alpine AS production
+
+# Instalar OpenSSL e dependências necessárias
+RUN apk add --no-cache openssl libc6-compat
 
 WORKDIR /app
 

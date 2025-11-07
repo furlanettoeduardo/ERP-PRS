@@ -10,17 +10,30 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Modelo de exemplo - User
-// Será expandido no módulo de autenticação
+// Modelo de User - Autenticação e Gerenciamento
 model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  password  String
-  name      String
-  role      String   @default("user")
-  active    Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id            String         @id @default(uuid())
+  name          String
+  email         String         @unique
+  password      String
+  role          String         @default("user")
+  active        Boolean        @default(true)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  refreshTokens RefreshToken[]
 
   @@map("users")
+}
+
+// Modelo de RefreshToken - Gerenciamento de tokens
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  revoked   Boolean  @default(false)
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+
+  @@map("refresh_tokens")
 }

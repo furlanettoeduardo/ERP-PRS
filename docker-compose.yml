@@ -61,7 +61,6 @@ services:
     volumes:
       - ./backend:/app
       - /app/node_modules
-      - /app/dist
     depends_on:
       postgres:
         condition: service_healthy
@@ -69,7 +68,7 @@ services:
         condition: service_healthy
     networks:
       - erp-network
-    command: sh -c "npx prisma migrate deploy && npm run start:dev"
+    command: sh -c "npx prisma migrate deploy && rm -rf /app/dist && npm run start:dev"
 
   # Frontend Next.js
   frontend:

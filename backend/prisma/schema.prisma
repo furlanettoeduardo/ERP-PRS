@@ -57,18 +57,21 @@ enum MovementOrigin {
 
 // Modelo de Produto
 model Product {
-  id             String          @id @default(uuid())
-  sku            String          @unique
-  name           String
-  description    String?
-  price          Decimal         @db.Decimal(10, 2)
-  cost           Decimal?        @db.Decimal(10, 2)
-  currentStock   Int             @default(0) @map("current_stock")
-  minStock       Int?            @default(0) @map("min_stock") // Estoque mínimo
-  active         Boolean         @default(true)
-  createdAt      DateTime        @default(now()) @map("created_at")
-  updatedAt      DateTime        @updatedAt @map("updated_at")
-  stockMovements StockMovement[]
+  id                  String               @id @default(uuid())
+  sku                 String               @unique
+  name                String
+  description         String?
+  price               Decimal              @db.Decimal(10, 2)
+  cost                Decimal?             @db.Decimal(10, 2)
+  currentStock        Int                  @default(0) @map("current_stock")
+  minStock            Int?                 @default(0) @map("min_stock") // Estoque mínimo
+  active              Boolean              @default(true)
+  createdAt           DateTime             @default(now()) @map("created_at")
+  updatedAt           DateTime             @updatedAt @map("updated_at")
+  stockMovements      StockMovement[]
+  variants            ProductVariant[]
+  marketplaceProducts MarketplaceProduct[]
+  productMappings     ProductMapping[]
 
   @@index([sku])
   @@index([name])
@@ -99,12 +102,13 @@ model StockMovement {
 
 // Modelo de Armazém (estrutura básica para futuro multi-estoque)
 model Warehouse {
-  id        String   @id @default(uuid())
-  name      String
-  address   String?
-  active    Boolean  @default(true)
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  id           String         @id @default(uuid())
+  name         String
+  address      String?
+  active       Boolean        @default(true)
+  createdAt    DateTime       @default(now()) @map("created_at")
+  updatedAt    DateTime       @updatedAt @map("updated_at")
+  channelStock ChannelStock[]
 
   @@map("warehouses")
 }
@@ -180,4 +184,270 @@ model IntegrationLog {
   @@index([type])
   @@index([createdAt])
   @@map("integration_logs")
+}
+
+// ============================================
+// MODELOS DE SINCRONIZAÇÃO (ETAPA 07)
+// ============================================
+
+// Variações de Produto
+model ProductVariant {
+  id                  String               @id @default(uuid())
+  productId           String               @map("product_id")
+  product             Product              @relation(fields: [productId], references: [id], onDelete: Cascade)
+  sku                 String               @unique
+  name                String
+  attributes          Json? // {color: "Red", size: "M"}
+  price               Decimal?             @db.Decimal(10, 2)
+  stock               Int                  @default(0)
+  active              Boolean              @default(true)
+  createdAt           DateTime             @default(now()) @map("created_at")
+  updatedAt           DateTime             @updatedAt @map("updated_at")
+  marketplaceProducts MarketplaceProduct[]
+  channelStock        ChannelStock[]
+
+  @@index([productId])
+  @@index([sku])
+  @@map("product_variants")
+}
+
+// Produtos mapeados em marketplaces
+model MarketplaceProduct {
+  id                String          @id @default(uuid())
+  marketplace       Marketplace
+  marketplaceItemId String          @map("marketplace_item_id") // ID externo no marketplace
+  productId         String          @map("product_id")
+  product           Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  variantId         String?         @map("variant_id")
+  variant           ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
+  sku               String
+  status            String          @default("active") // active, inactive, draft
+  mappedAt          DateTime        @default(now()) @map("mapped_at")
+  syncedAt          DateTime?       @map("synced_at")
+  extraData         Json?           @map("extra_data") // Dados específicos do marketplace
+  createdAt         DateTime        @default(now()) @map("created_at")
+  updatedAt         DateTime        @updatedAt @map("updated_at")
+
+  @@unique([marketplace, marketplaceItemId])
+  @@index([productId])
+  @@index([variantId])
+  @@index([sku])
+  @@index([marketplace, sku])
+  @@map("marketplace_products")
+}
+
+// Mapeamento de produtos para exportação
+model ProductMapping {
+  id                  String      @id @default(uuid())
+  productId           String      @map("product_id")
+  product             Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+  marketplace         Marketplace
+  externalCategoryId  String?     @map("external_category_id")
+  mappingRules        Json?       @map("mapping_rules") // Regras de transformação
+  attributeMapping    Json?       @map("attribute_mapping") // Mapeamento de atributos
+  priceAdjustment     Decimal?    @db.Decimal(10, 2) @map("price_adjustment")
+  priceAdjustmentType String?     @default("fixed") @map("price_adjustment_type") // fixed, percentage
+  active              Boolean     @default(true)
+  createdAt           DateTime    @default(now()) @map("created_at")
+  updatedAt           DateTime    @updatedAt @map("updated_at")
+
+  @@unique([productId, marketplace])
+  @@index([marketplace])
+  @@map("product_mappings")
+}
+
+// Mapeamento de categorias
+model CategoryMapping {
+  id                String      @id @default(uuid())
+  marketplace       Marketplace
+  externalCategoryId String     @map("external_category_id")
+  externalCategoryName String?  @map("external_category_name")
+  localCategoryId   String?     @map("local_category_id") // Futuro: FK para tabela categories
+  localCategoryName String?     @map("local_category_name")
+  attributesSchema  Json?       @map("attributes_schema") // Schema de atributos obrigatórios
+  mapping           Json?       // Regras de mapeamento
+  active            Boolean     @default(true)
+  createdAt         DateTime    @default(now()) @map("created_at")
+  updatedAt         DateTime    @updatedAt @map("updated_at")
+
+  @@unique([marketplace, externalCategoryId])
+  @@index([marketplace])
+  @@map("category_mappings")
+}
+
+// Tipos de job de sincronização
+enum SyncJobType {
+  PRODUCT_IMPORT
+  PRODUCT_EXPORT
+  STOCK_SYNC
+  PRICE_SYNC
+  CUSTOMER_SYNC
+  ORDER_IMPORT
+  RECONCILIATION
+  FULL_SYNC
+}
+
+// Status de job
+enum SyncJobStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+  RETRYING
+}
+
+// Jobs de sincronização
+model SyncJob {
+  id          String        @id @default(uuid())
+  type        SyncJobType
+  marketplace Marketplace
+  accountId   String        @map("account_id") // integration_id
+  status      SyncJobStatus @default(PENDING)
+  progress    Int           @default(0) // 0-100
+  totalItems  Int?          @map("total_items")
+  processedItems Int?       @map("processed_items")
+  failedItems Int?          @map("failed_items")
+  startedAt   DateTime?     @map("started_at")
+  finishedAt  DateTime?     @map("finished_at")
+  meta        Json?         // Metadados: filters, options, etc
+  error       String?       @db.Text
+  retryCount  Int           @default(0) @map("retry_count")
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+  logs        SyncLog[]
+
+  @@index([marketplace])
+  @@index([status])
+  @@index([type])
+  @@index([createdAt])
+  @@map("sync_jobs")
+}
+
+// Action types para logs
+enum SyncAction {
+  CREATE
+  UPDATE
+  DELETE
+  SKIP
+  ERROR
+}
+
+// Logs detalhados por item
+model SyncLog {
+  id         String     @id @default(uuid())
+  jobId      String     @map("job_id")
+  job        SyncJob    @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  marketplace Marketplace
+  externalId String?    @map("external_id")
+  localId    String?    @map("local_id")
+  sku        String?
+  action     SyncAction
+  result     String     @default("pending") // success, failed, skipped
+  payload    Json?      // Dados enviados/recebidos
+  error      String?    @db.Text
+  createdAt  DateTime   @default(now()) @map("created_at")
+
+  @@index([jobId])
+  @@index([marketplace])
+  @@index([result])
+  @@index([createdAt])
+  @@map("sync_logs")
+}
+
+// Mapeamento de clientes/customers
+model ClientMapping {
+  id                String      @id @default(uuid())
+  marketplace       Marketplace
+  externalCustomerId String     @map("external_customer_id")
+  userId            String?     @map("user_id") // FK para User (futuro)
+  email             String?
+  name              String?
+  extraData         Json?       @map("extra_data")
+  createdAt         DateTime    @default(now()) @map("created_at")
+  updatedAt         DateTime    @updatedAt @map("updated_at")
+
+  @@unique([marketplace, externalCustomerId])
+  @@index([email])
+  @@map("client_mappings")
+}
+
+// Regras de preço
+model PriceRule {
+  id          String      @id @default(uuid())
+  name        String
+  marketplace Marketplace?
+  formula     Json        // {type: "markup", value: 20} ou {type: "fixed", value: 10}
+  conditions  Json?       // Condições: categoria, tags, etc
+  priority    Int         @default(0)
+  active      Boolean     @default(true)
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+
+  @@index([active])
+  @@index([marketplace])
+  @@map("price_rules")
+}
+
+// Estoque por canal/warehouse
+model ChannelStock {
+  id               String          @id @default(uuid())
+  productVariantId String?         @map("product_variant_id")
+  variant          ProductVariant? @relation(fields: [productVariantId], references: [id], onDelete: Cascade)
+  warehouseId      String          @map("warehouse_id")
+  warehouse        Warehouse       @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  marketplace      Marketplace?
+  availableQty     Int             @default(0) @map("available_qty")
+  reservedQty      Int             @default(0) @map("reserved_qty")
+  updatedAt        DateTime        @updatedAt @map("updated_at")
+
+  @@unique([productVariantId, warehouseId, marketplace])
+  @@index([warehouseId])
+  @@index([marketplace])
+  @@map("channel_stock")
+}
+
+// Conflitos de sincronização
+model SyncConflict {
+  id          String      @id @default(uuid())
+  marketplace Marketplace
+  entityType  String      @map("entity_type") // product, stock, price, customer
+  entityId    String      @map("entity_id")
+  externalId  String?     @map("external_id")
+  field       String      // Campo em conflito
+  localValue  String?     @map("local_value") @db.Text
+  remoteValue String?     @map("remote_value") @db.Text
+  resolution  String?     // use_local, use_remote, manual
+  resolved    Boolean     @default(false)
+  resolvedAt  DateTime?   @map("resolved_at")
+  resolvedBy  String?     @map("resolved_by")
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+
+  @@index([marketplace])
+  @@index([resolved])
+  @@index([entityType])
+  @@index([createdAt])
+  @@map("sync_conflicts")
+}
+
+// Configurações de sincronização por marketplace
+model SyncConfig {
+  id                    String      @id @default(uuid())
+  marketplace           Marketplace @unique
+  enabled               Boolean     @default(true)
+  stockSyncInterval     Int         @default(120) @map("stock_sync_interval") // segundos
+  priceSyncInterval     Int         @default(1800) @map("price_sync_interval")
+  productSyncInterval   Int         @default(43200) @map("product_sync_interval")
+  customerSyncInterval  Int         @default(1800) @map("customer_sync_interval")
+  autoSync              Boolean     @default(false) @map("auto_sync")
+  sourceOfTruth         String      @default("erp") @map("source_of_truth") // erp, marketplace, hybrid
+  conflictResolution    String      @default("manual") @map("conflict_resolution") // manual, auto_local, auto_remote
+  batchSize             Int         @default(50) @map("batch_size")
+  rateLimitPerMinute    Int         @default(60) @map("rate_limit_per_minute")
+  settings              Json?       // Configurações adicionais por marketplace
+  createdAt             DateTime    @default(now()) @map("created_at")
+  updatedAt             DateTime    @updatedAt @map("updated_at")
+
+  @@map("sync_configs")
 }

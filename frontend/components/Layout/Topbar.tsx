@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
 import { authService } from '@/lib/auth';
@@ -83,7 +84,7 @@ export function Topbar() {
                   <p className="text-xs text-gray-500 mt-0.5">{user?.email}</p>
                 </div>
                 <Link
-                  href="/dashboard/profile"
+                  href="/perfil"
                   className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                   onClick={() => setShowUserMenu(false)}
                 >
@@ -104,22 +105,5 @@ export function Topbar() {
         </div>
       </div>
     </header>
-  );
-}
-
-function Link({ href, className, onClick, children }: any) {
-  const router = useRouter();
-  return (
-    <a
-      href={href}
-      className={className}
-      onClick={(e) => {
-        e.preventDefault();
-        onClick?.();
-        router.push(href);
-      }}
-    >
-      {children}
-    </a>
   );
 }

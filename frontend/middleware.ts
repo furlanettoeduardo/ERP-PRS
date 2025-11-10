@@ -15,7 +15,11 @@ export function middleware(request: NextRequest) {
   }
 
   // Se estiver em rota protegida e não tiver token, redirecionar para login
-  if (!isPublicRoute && !accessToken) {
+  // Rotas protegidas: /dashboard/*, /estoque/*, /usuarios/*, /produtos/*, /pedidos/*, /relatorios/*, /configuracoes/*, /perfil/*, /integracoes/*
+  const protectedPaths = ['/dashboard', '/estoque', '/usuarios', '/produtos', '/pedidos', '/relatorios', '/configuracoes', '/perfil', '/integracoes'];
+  const isProtectedRoute = protectedPaths.some(path => pathname.startsWith(path));
+  
+  if (isProtectedRoute && !accessToken) {
     const loginUrl = new URL('/auth/login', request.url);
     loginUrl.searchParams.set('redirect', pathname);
     return NextResponse.redirect(loginUrl);

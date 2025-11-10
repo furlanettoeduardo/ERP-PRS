@@ -6,6 +6,8 @@ import {
   Package,
   ShoppingCart,
   BarChart3,
+  Warehouse,
+  Plug,
 } from 'lucide-react';
 
 export interface NavItem {
@@ -23,27 +25,37 @@ export const navItems: NavItem[] = [
   },
   {
     title: 'Usuários',
-    href: '/dashboard/users',
+    href: '/usuarios',
     icon: Users,
   },
   {
+    title: 'Estoque',
+    href: '/estoque',
+    icon: Warehouse,
+  },
+  {
     title: 'Produtos',
-    href: '/dashboard/products',
+    href: '/produtos',
     icon: Package,
   },
   {
     title: 'Pedidos',
-    href: '/dashboard/orders',
+    href: '/pedidos',
     icon: ShoppingCart,
   },
   {
+    title: 'Integrações',
+    href: '/integracoes',
+    icon: Plug,
+  },
+  {
     title: 'Relatórios',
-    href: '/dashboard/reports',
+    href: '/relatorios',
     icon: BarChart3,
   },
   {
     title: 'Configurações',
-    href: '/dashboard/settings',
+    href: '/configuracoes',
     icon: Settings,
   },
 ];

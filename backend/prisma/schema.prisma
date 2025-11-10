@@ -12,15 +12,17 @@ datasource db {
 
 // Modelo de User - Autenticação e Gerenciamento
 model User {
-  id            String         @id @default(uuid())
-  name          String
-  email         String         @unique
-  password      String
-  role          String         @default("user")
-  active        Boolean        @default(true)
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  refreshTokens RefreshToken[]
+  id             String          @id @default(uuid())
+  name           String
+  email          String          @unique
+  password       String
+  role           String          @default("user")
+  active         Boolean         @default(true)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  refreshTokens  RefreshToken[]
+  stockMovements StockMovement[]
+  integrations   Integration[]
 
   @@map("users")
 }
@@ -36,4 +38,146 @@ model RefreshToken {
   expiresAt DateTime
 
   @@map("refresh_tokens")
+}
+
+// Enums para Gestão de Estoque
+enum MovementType {
+  ENTRY      // Entrada de estoque
+  EXIT       // Saída de estoque
+  ADJUSTMENT // Ajuste de estoque
+}
+
+enum MovementOrigin {
+  MANUAL      // Manual pelo usuário
+  MARKETPLACE // Integração marketplace
+  ORDER       // Pedido
+  IMPORT      // Importação em lote
+  OTHER       // Outros
+}
+
+// Modelo de Produto
+model Product {
+  id             String          @id @default(uuid())
+  sku            String          @unique
+  name           String
+  description    String?
+  price          Decimal         @db.Decimal(10, 2)
+  cost           Decimal?        @db.Decimal(10, 2)
+  currentStock   Int             @default(0) @map("current_stock")
+  minStock       Int?            @default(0) @map("min_stock") // Estoque mínimo
+  active         Boolean         @default(true)
+  createdAt      DateTime        @default(now()) @map("created_at")
+  updatedAt      DateTime        @updatedAt @map("updated_at")
+  stockMovements StockMovement[]
+
+  @@index([sku])
+  @@index([name])
+  @@map("products")
+}
+
+// Modelo de Movimentação de Estoque
+model StockMovement {
+  id            String         @id @default(uuid())
+  productId     String         @map("product_id")
+  product       Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
+  type          MovementType
+  quantity      Int // Sempre positivo, lógica define se adiciona ou remove
+  previousStock Int            @map("previous_stock")
+  newStock      Int            @map("new_stock")
+  userId        String         @map("user_id")
+  user          User           @relation(fields: [userId], references: [id])
+  origin        MovementOrigin @default(MANUAL)
+  note          String?
+  createdAt     DateTime       @default(now()) @map("created_at")
+
+  @@index([productId])
+  @@index([userId])
+  @@index([type])
+  @@index([createdAt])
+  @@map("stock_movements")
+}
+
+// Modelo de Armazém (estrutura básica para futuro multi-estoque)
+model Warehouse {
+  id        String   @id @default(uuid())
+  name      String
+  address   String?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("warehouses")
+}
+
+// Enums para Integrações
+enum Marketplace {
+  MERCADO_LIVRE
+  SHOPEE
+  AMAZON
+  WOOCOMMERCE
+}
+
+enum IntegrationStatus {
+  CONNECTED
+  DISCONNECTED
+  ERROR
+}
+
+enum LogType {
+  INFO
+  WARNING
+  ERROR
+}
+
+// Modelo de Integração
+model Integration {
+  id          String            @id @default(uuid())
+  marketplace Marketplace
+  status      IntegrationStatus @default(DISCONNECTED)
+  userId      String            @map("user_id")
+  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime          @default(now()) @map("created_at")
+  updatedAt   DateTime          @updatedAt @map("updated_at")
+  credentials IntegrationCredential?
+  logs        IntegrationLog[]
+
+  @@unique([userId, marketplace])
+  @@index([userId])
+  @@index([marketplace])
+  @@index([status])
+  @@map("integrations")
+}
+
+// Modelo de Credenciais de Integração (criptografadas)
+model IntegrationCredential {
+  id            String       @id @default(uuid())
+  integrationId String       @unique @map("integration_id")
+  integration   Integration  @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+  accessToken   String?      @map("access_token") // Criptografado
+  refreshToken  String?      @map("refresh_token") // Criptografado
+  expiresAt     DateTime?    @map("expires_at")
+  apiKey        String?      @map("api_key") // Criptografado
+  shopId        String?      @map("shop_id")
+  sellerId      String?      @map("seller_id")
+  extraData     Json?        @map("extra_data") // Dados extras específicos de cada marketplace
+  createdAt     DateTime     @default(now()) @map("created_at")
+  updatedAt     DateTime     @updatedAt @map("updated_at")
+
+  @@map("integration_credentials")
+}
+
+// Modelo de Log de Integrações
+model IntegrationLog {
+  id            String      @id @default(uuid())
+  integrationId String      @map("integration_id")
+  integration   Integration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+  message       String
+  type          LogType     @default(INFO)
+  payload       Json?       // Dados adicionais do log
+  createdAt     DateTime    @default(now()) @map("created_at")
+
+  @@index([integrationId])
+  @@index([type])
+  @@index([createdAt])
+  @@map("integration_logs")
 }

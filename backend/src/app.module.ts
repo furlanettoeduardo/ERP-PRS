@@ -6,6 +6,8 @@ import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
+import { InventoryModule } from './modules/inventory/inventory.module';
+import { IntegrationsModule } from './modules/integrations/integrations.module';
 
 @Module({
   imports: [
@@ -22,6 +24,10 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
     UsersModule,
     // Módulo de dashboard
     DashboardModule,
+    // Módulo de estoque/inventário
+    InventoryModule,
+    // Módulo de integrações com marketplaces
+    IntegrationsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -6,7 +6,7 @@ export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Rotas públicas que não precisam de autenticação
-  const publicRoutes = ['/', '/login', '/register'];
+  const publicRoutes = ['/', '/auth/login', '/login', '/register'];
   const isPublicRoute = publicRoutes.includes(pathname);
 
   // Se estiver em rota pública e tiver token, redirecionar para dashboard
@@ -16,7 +16,7 @@ export function middleware(request: NextRequest) {
 
   // Se estiver em rota protegida e não tiver token, redirecionar para login
   if (!isPublicRoute && !accessToken) {
-    const loginUrl = new URL('/login', request.url);
+    const loginUrl = new URL('/auth/login', request.url);
     loginUrl.searchParams.set('redirect', pathname);
     return NextResponse.redirect(loginUrl);
   }

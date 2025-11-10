@@ -56,13 +56,13 @@ export default function Home() {
 
         <div className="flex justify-center space-x-4">
           <Link
-            href="/login"
+            href="/auth/login"
             className="px-8 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors shadow-md"
           >
             Fazer Login
           </Link>
           <Link
-            href="/register"
+            href="/auth/login"
             className="px-8 py-3 bg-white text-blue-600 border-2 border-blue-600 rounded-lg font-semibold hover:bg-blue-50 transition-colors shadow-md"
           >
             Criar Conta

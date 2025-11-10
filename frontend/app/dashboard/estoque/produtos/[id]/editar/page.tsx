@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { use, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card } from '@/components/ui/card';
 import api from '@/lib/api';
@@ -16,8 +16,9 @@ interface Product {
   minStock: number;
 }
 
-export default function EditarProdutoPage({ params }: { params: { id: string } }) {
+export default function EditarProdutoPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
+  const unwrappedParams = use(params);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [product, setProduct] = useState<Product | null>(null);
@@ -32,11 +33,11 @@ export default function EditarProdutoPage({ params }: { params: { id: string } }
 
   useEffect(() => {
     fetchProduct();
-  }, [params.id]);
+  }, [unwrappedParams.id]);
 
   const fetchProduct = async () => {
     try {
-      const response = await api.get<Product>(`/inventory/products/${params.id}`);
+      const response = await api.get<Product>(`/inventory/products/${unwrappedParams.id}`);
       setProduct(response.data);
       setFormData({
         sku: response.data.sku,
@@ -60,7 +61,7 @@ export default function EditarProdutoPage({ params }: { params: { id: string } }
     setSaving(true);
 
     try {
-      await api.put(`/inventory/products/${params.id}`, {
+      await api.put(`/inventory/products/${unwrappedParams.id}`, {
         sku: formData.sku,
         name: formData.name,
         description: formData.description || null,

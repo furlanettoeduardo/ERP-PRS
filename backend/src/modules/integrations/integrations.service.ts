@@ -77,8 +77,30 @@ export class IntegrationsService {
     return integration;
   }
 
+  /**
+   * Busca integração com credenciais completas (uso interno apenas)
+   */
+  private async findOneWithCredentials(userId: string, marketplace: Marketplace) {
+    const integration = await this.prisma.integration.findFirst({
+      where: { userId, marketplace },
+      include: {
+        credentials: true,
+      },
+    });
+
+    return integration;
+  }
+
+  /**
+   * Método público para buscar integração por marketplace
+   */
+  async getIntegrationByMarketplace(userId: string, marketplace: string) {
+    const marketplaceEnum = marketplace.toUpperCase().replace('-', '_') as Marketplace;
+    return this.findOneWithCredentials(userId, marketplaceEnum);
+  }
+
   async connect(marketplace: string, credentials: any, userId: string) {
-    const marketplaceEnum = marketplace.toUpperCase() as Marketplace;
+    const marketplaceEnum = marketplace.toUpperCase().replace('-', '_') as Marketplace;
 
     // Verifica se já existe
     const existing = await this.prisma.integration.findFirst({
@@ -176,7 +198,7 @@ export class IntegrationsService {
   }
 
   async disconnect(marketplace: string, userId: string) {
-    const marketplaceEnum = marketplace.toUpperCase() as Marketplace;
+    const marketplaceEnum = marketplace.toUpperCase().replace('-', '_') as Marketplace;
 
     const integration = await this.prisma.integration.findFirst({
       where: { userId, marketplace: marketplaceEnum },
@@ -222,7 +244,7 @@ export class IntegrationsService {
   }
 
   async getStatus(marketplace: string, userId: string) {
-    const marketplaceEnum = marketplace.toUpperCase() as Marketplace;
+    const marketplaceEnum = marketplace.toUpperCase().replace('-', '_') as Marketplace;
 
     const integration = await this.prisma.integration.findFirst({
       where: { userId, marketplace: marketplaceEnum },

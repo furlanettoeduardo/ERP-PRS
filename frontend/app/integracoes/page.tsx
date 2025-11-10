@@ -60,8 +60,11 @@ export default function IntegracoesPage() {
   const handleConnect = async (marketplace: string) => {
     setConnecting(marketplace);
     
+    // Converte MERCADO_LIVRE para mercado-livre
+    const marketplacePath = marketplace.toLowerCase().replace('_', '-');
+    
     // Redireciona para página de configuração
-    window.location.href = `/integracoes/${marketplace.toLowerCase()}/configurar`;
+    window.location.href = `/integracoes/${marketplacePath}/configuracao`;
   };
 
   const handleDisconnect = async (marketplace: string) => {
@@ -72,7 +75,9 @@ export default function IntegracoesPage() {
     setConnecting(marketplace);
     
     try {
-      await api.post(`/integrations/${marketplace.toLowerCase()}/disconnect`);
+      // Converte MERCADO_LIVRE para mercado-livre
+      const marketplacePath = marketplace.toLowerCase().replace('_', '-');
+      await api.post(`/integrations/${marketplacePath}/disconnect`);
       await fetchIntegrations();
       alert('Integração desconectada com sucesso!');
     } catch (error: any) {

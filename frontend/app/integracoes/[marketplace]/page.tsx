@@ -38,6 +38,9 @@ export default function MarketplaceDetailPage() {
   const [loading, setLoading] = useState(true);
 
   const info = MARKETPLACE_INFO[marketplace] || {};
+  
+  // Converte mercado-livre para MERCADO_LIVRE (formato do backend)
+  const marketplaceApi = marketplace.toUpperCase().replace('-', '_');
 
   useEffect(() => {
     fetchIntegrationDetails();
@@ -47,15 +50,15 @@ export default function MarketplaceDetailPage() {
     try {
       setLoading(true);
       
-      // Busca status da integração
-      const statusResponse = await api.get(`/integrations/${marketplace}/status`);
+      // Busca status da integração (backend espera MERCADO_LIVRE)
+      const statusResponse = await api.get(`/integrations/${marketplaceApi}/status`);
       setIntegration(statusResponse.data);
 
       // Se conectado, busca logs
       if (statusResponse.data.connected) {
         const integrationsResponse = await api.get('/integrations');
         const found = integrationsResponse.data.find(
-          (i: any) => i.marketplace === marketplace.toUpperCase().replace('-', '_')
+          (i: any) => i.marketplace === marketplaceApi
         );
         
         if (found) {
@@ -71,14 +74,14 @@ export default function MarketplaceDetailPage() {
   };
 
   const handleReconnect = () => {
-    router.push(`/integracoes/${marketplace}/configurar`);
+    router.push(`/integracoes/${marketplace}/configuracao`);
   };
 
   const handleDisconnect = async () => {
     if (!confirm('Tem certeza que deseja desconectar esta integração?')) return;
 
     try {
-      await api.post(`/integrations/${marketplace}/disconnect`);
+      await api.post(`/integrations/${marketplaceApi}/disconnect`);
       await fetchIntegrationDetails();
       alert('Integração desconectada com sucesso!');
     } catch (error: any) {

@@ -26,6 +26,9 @@ export function IntegrationCard({
 }: IntegrationCardProps) {
   const router = useRouter();
 
+  // Converte MERCADO_LIVRE para mercado-livre
+  const marketplacePath = marketplace.toLowerCase().replace('_', '-');
+
   return (
     <Card className="p-6 hover:shadow-lg transition-shadow">
       <div className="flex items-start justify-between mb-4">
@@ -46,7 +49,7 @@ export function IntegrationCard({
         {status === 'CONNECTED' ? (
           <>
             <button
-              onClick={() => router.push(`/integracoes/${marketplace.toLowerCase()}`)}
+              onClick={() => router.push(`/integracoes/${marketplacePath}`)}
               className="flex-1 bg-gray-100 text-gray-900 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors font-medium text-sm"
             >
               Ver Detalhes
@@ -62,14 +65,14 @@ export function IntegrationCard({
         ) : (
           <>
             <button
-              onClick={onConnect}
+              onClick={() => router.push(`/integracoes/${marketplacePath}/configuracao`)}
               disabled={isConnecting}
               className="flex-1 bg-[#111827] text-white px-4 py-2 rounded-lg hover:bg-[#1f2937] transition-colors font-medium text-sm disabled:opacity-50"
             >
-              {isConnecting ? 'Conectando...' : 'Conectar'}
+              Configurar
             </button>
             <button
-              onClick={() => router.push(`/integracoes/${marketplace.toLowerCase()}/guia`)}
+              onClick={() => router.push(`/integracoes/${marketplacePath}/guia`)}
               className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors font-medium text-sm"
             >
               Guia

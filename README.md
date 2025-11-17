@@ -274,42 +274,6 @@ test: adiciona ou corrige testes
 chore: tarefas de manutenção
 ```
 
-### Branches
-
-- `main` - Produção
-- `develop` - Desenvolvimento
-- `feature/<nome>` - Nova funcionalidade
-- `fix/<nome>` - Correção de bug
-- `hotfix/<nome>` - Correção urgente
-
----
-
-## 📚 Próximos Passos
-
-Após a configuração do ambiente, você pode começar a implementar:
-
-1. **Módulo de Autenticação**
-   - Registro de usuários
-   - Login/Logout
-   - Guards JWT
-   - Refresh tokens
-
-2. **Módulo de Usuários**
-   - CRUD de usuários
-   - Perfis e permissões
-   - Gerenciamento de roles
-
-3. **Integrações com Marketplaces**
-   - Mercado Livre API
-   - Shopee API
-   - Amazon SP-API
-   - WooCommerce REST API
-
-4. **Gestão de Produtos**
-   - Catálogo unificado
-   - Sincronização com marketplaces
-   - Controle de estoque
-
 ---
 
 ## 🤝 Contribuindo
